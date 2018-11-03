@@ -40,38 +40,42 @@ function minutesToMoment(minutesInput) {
     return moment(`${hours}:${minutes}`, 'hh:mm A');
 }
 
+function updateClock() {
+    let timeDisplay = moment().format('hh:mm:ss A');
+    $('#header').text('Schedule ' + timeDisplay);
+}
+
 db.ref().on("child_added", function(childSnapshot) {
     console.log(childSnapshot.val());
-
-    // Store everything into a variable.
     let trainName = childSnapshot.val().name;
     let trainDestination = childSnapshot.val().destination;
     let trainFrequency = parseInt(childSnapshot.val().frequency); // in minutes
     let firstArrival = moment(childSnapshot.val().firstArrival, "hh:mm"); // as a moment
-    let firstArrivalMinutes = returnMinutes(firstArrival);
-    let currentTimeMinutes = returnMinutes(moment());
-    let trainsPassed = Math.floor((currentTimeMinutes - firstArrivalMinutes) / trainFrequency);
-    let nextTrainMinutes = (trainsPassed * trainFrequency) + firstArrivalMinutes + trainFrequency;
-    let nextTrainTime = minutesToMoment(nextTrainMinutes);
-    let nextTrainDisplay = nextTrainTime.format('hh:mm A');
-    let minutesAway = nextTrainTime.diff(moment(), 'minutes');
+    let firstArrivalMinutes = returnMinutes(firstArrival); // time of first arrival train, in minutes
+    let currentTimeMinutes = returnMinutes(moment()); // current time in minutes
+    let trainsPassed = Math.floor((currentTimeMinutes - firstArrivalMinutes) / trainFrequency); // the number of trains that have passed by today
+    let nextTrainMinutes = (trainsPassed * trainFrequency) + firstArrivalMinutes + trainFrequency; // minute in day when next train will arrive
+    let nextTrainTime = minutesToMoment(nextTrainMinutes); // moment that next train will arrive
+    //let nextTrainDisplay = nextTrainTime.format('hh:mm A'); 
+    let minutesAway = nextTrainTime.diff(moment(), 'minutes'); // minutes until next train
 
     // Create the new row
     var newRow = $("<tr>").append(
         $("<td>").text(trainName),
         $("<td>").text(trainDestination),
         $("<td>").text(trainFrequency),
-        $('<td>').text(nextTrainDisplay),
+        //$('<td>').text(nextTrainDisplay),
+        $("<td>").text(nextTrainTime.format('hh:mm A')),
         $('<td>').text(minutesAway)
         );
     $('#list-of-trains').append(newRow);
 });
 
 $(document).ready( ()=> {
-    let timeDisplay = moment().format('hh:mm:ss A')
-    console.log('Displaying time');
-    $('#header').text(timeDisplay);
+    updateClock();
 })
+
+setInterval(updateClock, 1000);
 
 $("#add-train").click(function() {
     event.preventDefault();
